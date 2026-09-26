@@ -1,0 +1,15 @@
+.github
+.idea
+.husky
+.nyc_output
+dist/tiny-lru.min.js
+dist/tiny-lru.min.js.map
+dist/tiny-lru.umd.js
+dist/tiny-lru.umd.min.js
+dist/tiny-lru.umd.min.js.map
+src
+test
+.gitignore
+benchmark.js
+eslint.config.js
+rollup.config.js
