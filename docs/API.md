@@ -140,7 +140,7 @@ console.log(cache.resetTtl); // true
 
 ### `size`
 
-`number` - Current number of items in cache.
+`number` - Current number of unexpired items in cache. Expired items are not counted, even if not yet physically removed, keeping `size` consistent with `keys()`, `entries()`, `values()`, `forEach()` and `toJSON()`.
 
 ```javascript
 const cache = lru(10);

@@ -15,6 +15,7 @@
 class LRU {
 	#stats;
 	#onEvict;
+	#size;
 
 	/**
 	 * Creates a new LRU cache instance.
@@ -43,10 +44,34 @@ class LRU {
 		this.last = null;
 		this.max = max;
 		this.resetTTL = resetTTL;
-		this.size = 0;
+		this.#size = 0;
 		this.ttl = ttl;
 		this.#stats = { hits: 0, misses: 0, sets: 0, deletes: 0, evictions: 0 };
 		this.#onEvict = null;
+	}
+
+	/**
+	 * The number of unexpired items in the cache.
+	 * Consistent with keys(), entries(), values(), forEach() and toJSON():
+	 * expired items are not counted, even if not yet physically removed.
+	 *
+	 * @returns {number} The number of unexpired items.
+	 */
+	get size() {
+		if (this.ttl === 0) {
+			return this.#size;
+		}
+
+		const now = Date.now();
+		let count = 0;
+
+		for (let x = this.first; x !== null; x = x.next) {
+			if (x.expiry > now) {
+				count++;
+			}
+		}
+
+		return count;
 	}
 
 	/**
@@ -65,7 +90,7 @@ class LRU {
 		this.first = null;
 		this.items = Object.create(null);
 		this.last = null;
-		this.size = 0;
+		this.#size = 0;
 		this.#stats.hits = 0;
 		this.#stats.misses = 0;
 		this.#stats.sets = 0;
@@ -132,7 +157,7 @@ class LRU {
 	 * @returns {LRU} The LRU instance for method chaining.
 	 */
 	evict() {
-		if (this.size === 0) {
+		if (this.#size === 0) {
 			return this;
 		}
 
@@ -264,7 +289,7 @@ class LRU {
 	 */
 	#removeItem(item) {
 		delete this.items[item.key];
-		this.size--;
+		this.#size--;
 		this.#unlink(item);
 		item.prev = null;
 		item.next = null;
@@ -283,7 +308,7 @@ class LRU {
 		delete this.items[item.key];
 		this.#stats.evictions++;
 
-		if (--this.size === 0) {
+		if (--this.#size === 0) {
 			this.first = null;
 			this.last = null;
 		} else {
@@ -319,17 +344,16 @@ class LRU {
 
 	/**
 	 * Returns an array of all keys in the cache, ordered from least to most recently used.
+	 * Expired items are excluded, consistent with entries(), values(), forEach() and toJSON().
 	 *
 	 * @returns {string[]} Array of keys in LRU order.
 	 */
 	keys() {
-		const result = Array.from({ length: this.size });
-		let x = this.first;
-		let i = 0;
-
-		while (x !== null) {
-			result[i++] = x.key;
-			x = x.next;
+		const result = [];
+		for (let x = this.first; x !== null; x = x.next) {
+			if (!this.#isExpired(x)) {
+				result.push(x.key);
+			}
 		}
 
 		return result;
@@ -358,7 +382,7 @@ class LRU {
 				this.#removeItem(item);
 			}
 
-			if (this.max > 0 && this.size === this.max) {
+			if (this.max > 0 && this.#size === this.max) {
 				const evictedItem = this.#evictItem();
 				evicted = {
 					key: evictedItem.key,
@@ -375,7 +399,7 @@ class LRU {
 				value,
 			};
 
-			if (++this.size === 1) {
+			if (++this.#size === 1) {
 				this.first = item;
 			} else {
 				this.last.next = item;
@@ -411,7 +435,7 @@ class LRU {
 				this.#removeItem(item);
 			}
 
-			if (this.max > 0 && this.size === this.max) {
+			if (this.max > 0 && this.#size === this.max) {
 				this.evict();
 			}
 
@@ -423,7 +447,7 @@ class LRU {
 				value,
 			};
 
-			if (++this.size === 1) {
+			if (++this.#size === 1) {
 				this.first = item;
 			} else {
 				this.last.next = item;
@@ -558,7 +582,7 @@ class LRU {
 	 * @returns {number} Number of expired items removed.
 	 */
 	cleanup() {
-		if (this.ttl === 0 || this.size === 0) {
+		if (this.ttl === 0 || this.#size === 0) {
 			return 0;
 		}
 
@@ -570,7 +594,7 @@ class LRU {
 				const key = x.key;
 				if (this.items[key] !== undefined) {
 					delete this.items[key];
-					this.size--;
+					this.#size--;
 					removed++;
 					this.#unlink(x);
 					x.prev = null;
@@ -639,7 +663,7 @@ class LRU {
 	 */
 	sizeByTTL() {
 		if (this.ttl === 0) {
-			return { valid: this.size, expired: 0, noTTL: this.size };
+			return { valid: this.#size, expired: 0, noTTL: this.#size };
 		}
 
 		const now = Date.now();
@@ -714,7 +738,7 @@ class LRU {
 	 * @private
 	 */
 	#rebuildList() {
-		if (this.size === 0) {
+		if (this.#size === 0) {
 			this.first = null;
 			this.last = null;
 			return;

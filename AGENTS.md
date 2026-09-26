@@ -191,6 +191,13 @@ Source code is in `src/`.
 - `moveToEnd()` is the core method for maintaining LRU order - item is always moved to the `last` position
 - `setWithEvicted()` optimizes updates by avoiding the full `set()` path for existing keys
 
+### 7.2 Consistency Audit (differential testing)
+
+- Invariant: at any instant, `keys()`/`entries()`/`values()`/`forEach()`/`toJSON()`/`size` must observe the same logical (unexpired) content; expired items disappear from all of them simultaneously.
+- Two violations were found and fixed: `keys()` leaked expired items (now filters like the other traversals), and `size` counted expired items (now a read-only getter over private `#size` reporting the unexpired count; internal code uses `#size` for the physical count, e.g. capacity checks).
+- Reads must not mutate: expired items stay physically stored until `get()`/`has()`/`delete()`/`cleanup()`/`set()` on the same key removes them, so `peek()`, `expiresAt()` and the `*ByTTL()` diagnostic family can still observe them.
+- `tests/unit/consistency.test.js` contains targeted regressions plus a seeded differential fuzzer (oracle model + mocked `Date.now`) covering systematic `max`/`ttl`/`resetTTL` combos.
+
 ---
 
 ## 8. Checklist Before Marking a TODO Complete

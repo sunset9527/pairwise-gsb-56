@@ -60,8 +60,8 @@ export class LRU<T = any> {
 	max: number;
 	/** Whether to reset TTL on set() operations */
 	resetTTL: boolean;
-	/** Current number of items in the cache */
-	size: number;
+	/** Current number of unexpired items in the cache (read-only) */
+	readonly size: number;
 	/** Time-to-live in milliseconds (0 = no expiration) */
 	ttl: number;
 

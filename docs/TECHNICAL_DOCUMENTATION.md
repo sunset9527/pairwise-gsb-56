@@ -54,7 +54,7 @@ graph TD
   - `last`: Pointer to most recently used item
   - `items`: Hash map for O(1) key lookup
   - `max`: Maximum cache size (0 = unlimited)
-  - `size`: Current number of items
+  - `size`: Current number of unexpired items (read-only getter)
   - `ttl`: Time-to-live in milliseconds (0 = no expiration)
    - `resetTTL`: Whether to reset TTL on `set()` and `setWithEvicted()` operations (not on `get()`)
 

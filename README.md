@@ -156,7 +156,7 @@ const cache = new LRU(100, 5000);
 | `last`    | `object` \| `null`  | Most recently used item (node with `key`, `value`, `prev`, `next`, `expiry`) |
 | `max`     | `number`         | Maximum items allowed                      |
 | `resetTTL`| `boolean`        | Whether TTL resets on `set()` updates      |
-| `size`    | `number`         | Current number of items                    |
+| `size`    | `number`         | Current number of unexpired items          |
 | `ttl`     | `number`         | Time-to-live in milliseconds               |
 
 ### Methods
